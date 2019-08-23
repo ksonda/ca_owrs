@@ -40,7 +40,13 @@ summary_table %<>%
 summary_table %<>%
   mutate_at(c("tier_1","tier_2","tier_3","tier_4","tier_5","tier_6","tier_7","tier_8"),
             funs(case_when(bill_unit == 'ccf' ~ .*.748052, 
+                           TRUE ~ .))) %>%
+  mutate_at(c("block_1","block_2","block_3","block_4","block_5","block_6","block_7","block_8"),
+            funs(case_when(bill_unit == 'ccf' ~ .*.748052, 
                            TRUE ~ .)))
+
+
+
 
 summary_table %<>%
   mutate(bill_unit = "converted to kgal")
