@@ -52,4 +52,13 @@ summary_table %<>%
   mutate(bill_unit = "converted to kgal")
 
 
+
+
+#Gathering
+
+summary_table %<>%
+gather(one_of("tier_1","tier_2","tier_3","tier_4","tier_5","tier_6","tier_7","tier_8"), key = "Tier_number", value = "Tier_threshold") %>%
+  gather(one_of("block_1","block_2","block_3","block_4","block_5","block_6","block_7","block_8"), key = "Block_number", value = "Block_price") 
+
+
 write_csv(summary_table, "Data/summary_table_cleaned.csv")
