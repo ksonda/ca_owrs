@@ -5,7 +5,7 @@ Water utility managers and regulators face many competing priorities when settin
 This exploratory, descriptive effort will leverage the OWRS data as well as drinking water quality monitoring data from [SDWIS](https://sdwis.waterboards.ca.gov/PDWW/) and the [U.S. Census](https://www.census.gov/data/developers/updates/new-discovery-tool.html) to:
 
 1. Construct and visualize affordability metrics for water utilities
-..*The industry-standard "water bill at mean consumption as a percentage of the community median household income (%MHI Standard)"
-..*The [Affordability Ratio](https://awwa.onlinelibrary.wiley.com/doi/full/10.5942/jawwa.2018.110.0002)
+*The industry-standard "water bill at mean consumption as a percentage of the community median household income (%MHI Standard)"
+*The [Affordability Ratio](https://awwa.onlinelibrary.wiley.com/doi/full/10.5942/jawwa.2018.110.0002)
 2. Visualise relationships between affordability
 
