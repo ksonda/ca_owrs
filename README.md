@@ -1,1 +1,5 @@
 # CA OWRS: Exploring California Drinking Water Rates, Affordability, and Safety using the Open Water Rate Specification
+
+Water utility managers and regulators face many competing priorities when setting retail water rates, including, but not limited to, cost recovery, affordability and conservation. However, determining the relationship between different water rate structures and the propensity for utilities to meet any one of these goals is difficult due to low availability of water rate structures that can be used to compare utility performance. In California, thanks to the efforts of the [California Data Collaborative](http://californiadatacollaborative.org/) and their [Open Water Rate Specification](https://github.com/California-Data-Collaborative/Open-Water-Rate-Specification), consistently formatted [water rates are available](https://github.com/California-Data-Collaborative/Open-Water-Rate-Specification/tree/master/full_utility_rates) for 2017 and 2018 for hundreds of California and Nevade utilities. 
+
+
