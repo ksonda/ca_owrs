@@ -106,7 +106,7 @@ write_csv(summary_table, "Data/OWRS/summary_table_cleaned_wide_format.csv")
 
 summary_table %<>%
 gather(one_of("tier_1","tier_2","tier_3","tier_4","tier_5","tier_6","tier_7","tier_8"), key = "Tier_number", value = "Tier_threshold") %>%
-  gather(one_of("tier_1_price","tier_2_price","tier_3_price","tier_4_price","tier_5_price","tier_6_price","tier_7_price","tier_8_price"), key = "Block_number", value = "Block_price") 
+  gather(one_of("tier_1_price","tier_2_price","tier_3_price","tier_4_price","tier_5_price","tier_6_price","tier_7_price","tier_8_price"), key = "Tier_number", value = "Tier_price") 
 
 
 write_csv(summary_table, "Data/OWRS/summary_table_cleaned.csv")
