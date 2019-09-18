@@ -11,3 +11,4 @@ This exploratory, descriptive effort will leverage the OWRS data as well as drin
   * Our own novel metric that accounts for an essential level of water consumption, and the distribution of household size and income within communities
 2. Visualise relationships between affordability, rate structures, water consumption, and water quality
 
+Members: Lauren Adams, Ben Dawson, Ian Morelan, Kyle Onda, Wai Yan Siu & Joakim Weill
