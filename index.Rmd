@@ -366,7 +366,7 @@ owrs_summary_full %>%
 * Use the rate parser to build a measure of the average bill size.
 
 
-### Downlaod Underlying Data
+### Download Underlying Data
 
 ```{r data_download, echo=FALSE, warning = FALSE, message = FALSE}
 
