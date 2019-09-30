@@ -17,19 +17,24 @@ select<-dplyr::select
 #All variables capitalized ; values str_to_title ; remove accents from all variables and values
 
 #-----------------------------------------------------------------------------------------------------------------
-
 summary_table <- read_csv("Data/OWRS/summary_table.csv")
 
 #Change billing frequency to monthly
 unique(summary_table$bill_frequency)
 
 #Going to normalize usage, tier thresholds and total bill by the bill frequency to get in month
+
+
+#la 09/30/2019 updated service charge based on comparison of OWRS raw file and summary_table.csv entry
+##for bi-monthly: Alameda County Water District 03/2018, Alhambra  City Of, Bakman Water Company, Westminister  City Of, 
+  #Garden Grove City of (was $0.73 off) and Pomona  City of and Sweetwater Springs Water District - not sure what is going on there, 
+##for quarterly: South Tahoe Public Utility District checks out fine
+##for annual:Glenbrook Water Cooperative - not found in OWRS in github, not verified
 summary_table %<>%
   mutate(service_charge = case_when(bill_frequency == "Annually" ~ service_charge/12,
-                                    bill_frequency == "Bi-Monthly" | bill_frequency == "Bimonthly" | bill_frequency == "bimonthly" ~ service_charge/2,   
+                                    bill_frequency == "Bi-Monthly" | bill_frequency == "Bimonthly" | bill_frequency == "bimonthly" ~ service_charge,   
                                     bill_frequency == "Quarterly" ~ service_charge/3,
                                     TRUE ~ service_charge))
-
 
 summary_table %<>%
   mutate(commodity_charge = case_when(bill_frequency == "Annually" ~ commodity_charge/12,
@@ -98,7 +103,7 @@ summary_table %<>%
   mutate(bill_unit = "converted to kgal")
 
 
-write_csv(summary_table, "Data/OWRS/summary_table_cleaned_wide_format.csv")
+write_csv(summary_table, "Data/OWRS/summary_table_cleaned_wide_formatv2.csv")
 
 
 
@@ -120,4 +125,4 @@ summary_table %<>%
 summary_table %<>%
   rename(Tier_number = tier_number)
   
-write_csv(summary_table, "Data/OWRS/summary_table_cleaned.csv")
+write_csv(summary_table, "Data/OWRS/summary_table_cleanedv2.csv")
