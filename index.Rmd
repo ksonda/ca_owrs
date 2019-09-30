@@ -15,7 +15,7 @@ output:
 
 Welcome to a clearing house of water data. This page explores water utility prices, consumption, sources, and the number of water quality violations each utility has experienced.
 
-To the left is a table of contents for the following page, but most importantly, immediately below is a map of water prices throughout California for the utilities that have greater than 3,000 customers. And for the data intrepid, at the bottom is the unerlying data consisting of the annual water production and deliveries reports, and rates.
+To the left is a table of contents for the following page, but most importantly, immediately below is a map of water prices throughout California for the utilities that have greater than 3,000 customers. And for the data intrepid, at the bottom is the underlying data consisting of the annual water production and deliveries reports, and rates.
 
 ```{r global, include=FALSE}
 
