@@ -84,8 +84,19 @@ rates <- rates[which(!is.na(rates$Ownership)),]
 ggplot(rates, aes(x=log10(D_POPULATI), fill=Ownership)) +
   geom_density(alpha=0.4)
 # Add mean lines
-x <- read_tsv("Data/EAR/earsurveyresults_2013ry.zip")
+ear13 <- read_tsv("Data/EAR/earsurveyresults_2013ry.zip",col_types="ccdcccdddc")
+ear14 <- read_tsv("Data/EAR/earsurveyresults_2014ry.zip",col_types="ccdcccdddc")
+ear15 <- read_tsv("Data/EAR/earsurveyresults_2015ry.zip",col_types="ccdcccdddc")
+ear16 <- read_tsv("Data/EAR/earsurveyresults_2016ry.zip",col_types="ccdcccdddc")
+ear17 <- read_tsv("Data/EAR/earsurveyresults_2017ry.zip",col_types="ccdcccdddc")
+ear18 <- read_tsv("Data/EAR/earsurveyresults_2018ry.zip",col_types="ccdcccdddc")
 
+ear <- bind_rows(ear13,ear14,ear15,ear16,ear17,ear18)
+rm(ear13,ear14,ear15,ear16,ear17,ear18)
+save(ear,file="Data/EAR/ear.rds")
+
+hcf <- filter(ear,QuestionName=='WR 6 HCF DW Charges')
+x <- filter(ear, QuestionName=='')
 ```
 
 
