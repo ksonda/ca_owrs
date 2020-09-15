@@ -84,7 +84,7 @@ rates <- rates[which(!is.na(rates$Ownership)),]
 ggplot(rates, aes(x=log10(D_POPULATI), fill=Ownership)) +
   geom_density(alpha=0.4)
 # Add mean lines
-
+x <- read_tsv("Data/EAR/earsurveyresults_2013ry.zip")
 
 ```
 
