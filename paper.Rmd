@@ -206,19 +206,36 @@ stargazer(r1,r2,type='html')
 conn <- ear %>% filter(SectionName=="Connections" & Year==2018)
 conn_sfr <- conn %>% filter(QuestionName=="SFR Potable Total" & Year==2018)
 conn_mfr <- conn %>% filter(QuestionName=="MFR Potable Total" & Year==2018)
-conn_total <- conn %>% filter(QuestionName=="T Potable Total" & Year==2018)
+conn_total <- conn %>% filter(QuestionName=="T Potable Total" & Year==2018) %>%rename(connections=QuestionResults) %>% mutate(connections=as.numeric(connections)) %>% select(PWSID,connections) %>% distinct(.keep_all=TRUE)
 
 shutoffs <- ear %>% filter(substr(QuestionName,1,12)=="WR SHUT_OFFS" & Year==2018)
 
 pws_shutoff_collect <- shutoffs %>% filter(QuestionName=="WR SHUT_OFFS Once No Collect" & is.na(QuestionResults))
 
-shutoffs_SF <- shutoffs %>% filter(QuestionName=="WR SHUT_OFFS Once SF Total") %>% mutate(sf_shutoffs=QuestionResults)%>%select(PWSID,sf_shutoffs) %>%distinct(.keep_all=TRUE)
-shutoffs_MF <- shutoffs %>% filter(QuestionName=="WR SHUT_OFFS Once MF Total") %>% mutate(mf_shutoffs=QuestionResults)%>%select(PWSID,mf_shutoffs)%>%distinct(.keep_all=TRUE)
-shutoffs_total <- pws_shutoff_collect %>% left_join(shutoffs_SF,by="PWSID")  %>% left_join(shutoffs_MF,by="PWSID") %>% mutate(shutoffs_total=as.numeric(sf_shutoffs)+as.numeric(mf_shutoffs)) %>% select(PWSID,shutoffs_total)
+shutoffs_total <- shutoffs %>%
+  filter(QuestionName=="WR SHUT_OFFS Once SF Total" |
+           QuestionName=="WR SHUT_OFFS More Than Once SF Total" |
+           QuestionName=="WR SHUT_OFFS More Than Once MF Total" |
+           QuestionName=="WR SHUT_OFFS Once SF Total") %>%
+  group_by(PWSID) %>%
+  summarise(shutoffs=sum(as.numeric(QuestionResults),na.rm=TRUE))%>%
+  select(PWSID,shutoffs) %>%
+  distinct(.keep_all=TRUE) %>% semi_join(pws_shutoff_collect,by="PWSID")
 
 shutoff_comments <- shutoffs %>% filter(QuestionName=="WR SHUT_OFFS Comments")
-  
-shutoff_pa<- ear%>%filter(QuestionName=="WR SHUT_OFFS Payment Assistance Total")
+  re
+shutoff_pa<- ear%>%filter(QuestionName=="WR SHUT_OFFS Payment Assistance Total" & Year==2018) %>%distinct(PWSID, QuestionResults) %>% rename(shutoff_pa=QuestionResults) %>% filter(!is.na(shutoff_pa)) %>% mutate(shutoff_pa=as.numeric(shutoff_pa))
+
+conn_shutoff <- left_join(conn_total,shutoffs_total,by="PWSID") %>% mutate(shutoff_rate=shutoffs/connections) %>% filter(connections>0) %>% filter(shutoff_rate<=1)
+
+
+r_shutoff <- left_join(r,conn_shutoff,by="PWSID") %>% distinct(PWSID,connections,.keep_all=TRUE) %>%
+ggplot(filter(r_shutoff), aes(x=size_cat, y=shutoff_rate, colour=Ownership)) +
+  geom_boxplot() 
+
+
+lm()
+
 ```
 
 ## Subsidy/ Cost assistance programs
