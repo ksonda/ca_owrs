@@ -98,8 +98,15 @@ ear$QCat<-substr(ear$QuestionName,1,2)
 
 wr <- filter(ear,QCat=="WR")
 
-hcf <- filter(ear,QuestionName=='WR 6 HCF DW Charges')
-x <- filter(ear, QuestionName=='')
+hcf <- ear %>% 
+  filter(Year==2017 & (QuestionName=='WR 6 HCF DW Charges' |QuestionName=='WR 12 HCF DW Charges' )) %>% 
+  distinct(.keep_all=TRUE) %>%
+  mutate(ConsLevel=QuestionName,
+         MonthlyBill=as.numeric(QuestionResults)) %>%
+  select(PWSID,ConsLevel,MonthlyBill)
+  
+#hcf12 <- filter(ear, QuestionName =="WR 12 HCF DW Charges")
+
 ```
 
 
@@ -107,6 +114,37 @@ x <- filter(ear, QuestionName=='')
 I then compare the monthly water bill (averaged to month for utilities with bimonthly, quarterly, and annual water bill regimes) for housheolds of size 1-7 between public and private utilities. In general, it does indeed seem to be the case that private utilties charge more on average for water than public utilities. Regression results show that on average, private utilties charge between \$3.50 and \$9.50  more per month depending on consumption levels than public utilies. 
 
 ```{r rates, echo=FALSE, include=TRUE, message=FALSE,warning=FALSE, results='asis'}
+r <- left_join(b,hcf,by="PWSID")
+wr_types <- wr %>% 
+  filter(QuestionName=="WR Type") %>% 
+  group_by(PWSID) %>% 
+  mutate(maxYear=max(Year)) %>% 
+  ungroup() %>% 
+  filter(Year==maxYear)
+
+no_rates <- wr_types %>% 
+  filter(QuestionResults=="-" | QuestionResults=="N/A") %>% 
+  mutate(rateType=QuestionResults) %>%
+  distinct(PWSID,.keep_all=TRUE) 
+
+has_rates <- filter(wr, QuestionName=="WR Type") %>% distinct(PWSID)
+
+r <- anti_join(r,no_rates,by="PWSID")
+r <- semi_join(r,has_rates,by="PWSID")
+
+
+r$Private <- 0
+r$Private[which(r$Ownership=="Private")]<-1
+r$MonthlyBill[which(r$MonthlyBill>1000)]<-NA
+ggplot(filter(r, MonthlyBill>0), aes(x=as.factor(ConsLevel), y=MonthlyBill, colour=Ownership)) +
+  geom_boxplot() 
+
+mr1<-lm(MonthlyBill~Private,data=r[which(r$ConsLevel=="WR 6 HCF DW Charges" & r$MonthlyBill>0),])
+mr2<-lm(MonthlyBill~Private,data=r[which(r$ConsLevel=="WR 12 HCF DW Charges"& r$MonthlyBill>0),])
+
+mr1.w<-lm(MonthlyBill~Private,data=r[which(r$ConsLevel=="WR 6 HCF DW Charges" & r$MonthlyBill>0),],weights=r$D_POPULATI[which(r$ConsLevel=="WR 6 HCF DW Charges" & r$MonthlyBill>0)])
+mr2.w<-lm(MonthlyBill~Private,data=r[which(r$ConsLevel=="WR 12 HCF DW Charges"& r$MonthlyBill>0),],weights=r$D_POPULATI[which(r$ConsLevel=="WR 12 HCF DW Charges"& r$MonthlyBill>0)])
+
 rates$Private <- 0
 rates$Private[which(rates$Ownership=="Private")]<-1
 ggplot(rates, aes(x=as.factor(hh_sizes), y=total_bill_by_hhsize, colour=Ownership)) +
@@ -130,6 +168,14 @@ ggplot(rates, aes(x=log(D_POPULATI+1), y=log(total_bill_by_hhsize), color=as.fac
   geom_point() + 
   geom_smooth(method=lm)
 
+ggplot(filter(rates,hh_sizes==3), aes(x=log(D_POPULATI+1), y=log(total_bill_by_hhsize), color=as.factor(Private), shape=as.factor(Private))) +
+  geom_point()
+
+
+ggplot(filter(r,MonthlyBill>0 & ConsLevel=="WR 6 HCF DW Charges" & D_POPULATI>10000), aes(x=log(D_POPULATI), y=log(MonthlyBill), color=as.factor(Private))) +
+  geom_point() + 
+  geom_smooth(method=lm)
+
 ```
 
 Since, we saw above that private utilities tend to be smaller than public ones, we can attempt to control for this. Below, we see that controlling for population size, on average private utilities tend to have 11-16% higher water bills for a given household size at 50gpcd than public utilities. Note that this is an average effect, and that the distributions of water bills do overlap substantially between public and private utilties. In any case, this correlation holds when adding county fixed effects to account for regional clustering factors (such as many of the private utilities being clustered in the Los Angeles area)
@@ -144,11 +190,26 @@ m6<-lm(log(total_bill_by_hhsize)~log(D_POPULATI+1)+Private,data=rates[which(rate
 m7<-lm(log(total_bill_by_hhsize)~log(D_POPULATI+1)+Private,data=rates[which(rates$hh_sizes==7),])
 stargazer(m1,m2,m3,m4,m5,m6,m7,type='html')
 
+
+r1<-lm(log(MonthlyBill)~log(D_POPULATI+1)+Private,data=r[which(r$ConsLevel=="WR 6 HCF DW Charges" & r$MonthlyBill>0 & r$D_POPULATI>3300),])
+r2<-lm(log(MonthlyBill)~log(D_POPULATI+1)+Private,data=r[which(r$ConsLevel=="WR 12 HCF DW Charges" & r$MonthlyBill>0 & r$D_POPULATI>3300),])
+
+stargazer(r1,r2,type='html')
+
+
 ```
 
 
 
 ## Shut-offs
+```{r shutoffs}
+conn <- ear %>% filter(SectionName=="Connections" & Year==2018)
+conn_sfr <- conn %>% filter(QuestionName=="SFR Potable Total" & Year==2018)
+conn_mfr <- conn %>% filter(QuestionName=="MFR Potable Total" & Year==2018)
+conn_total <- conn %>% filter(QuestionName=="T Potable Total" & Year==2018)
+
+shutoffs <- ear %>% filter(QuestionName=="")
+```
 
 ## Subsidy/ Cost assistance programs
 
