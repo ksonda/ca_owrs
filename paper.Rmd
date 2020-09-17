@@ -84,16 +84,17 @@ rates <- rates[which(!is.na(rates$Ownership)),]
 ggplot(rates, aes(x=log10(D_POPULATI), fill=Ownership)) +
   geom_density(alpha=0.4)
 # Add mean lines
-ear13 <- read_tsv("Data/EAR/earsurveyresults_2013ry.zip",col_types="ccdcccdddc")
-ear14 <- read_tsv("Data/EAR/earsurveyresults_2014ry.zip",col_types="ccdcccdddc")
-ear15 <- read_tsv("Data/EAR/earsurveyresults_2015ry.zip",col_types="ccdcccdddc")
-ear16 <- read_tsv("Data/EAR/earsurveyresults_2016ry.zip",col_types="ccdcccdddc")
-ear17 <- read_tsv("Data/EAR/earsurveyresults_2017ry.zip",col_types="ccdcccdddc")
-ear18 <- read_tsv("Data/EAR/earsurveyresults_2018ry.zip",col_types="ccdcccdddc")
-
-ear <- bind_rows(ear13,ear14,ear15,ear16,ear17,ear18)
-rm(ear13,ear14,ear15,ear16,ear17,ear18)
-save(ear,file="Data/EAR/ear.rds")
+# ear13 <- read_tsv("Data/EAR/earsurveyresults_2013ry.zip",col_types="ccdcccdddc")
+# ear14 <- read_tsv("Data/EAR/earsurveyresults_2014ry.zip",col_types="ccdcccdddc")
+# ear15 <- read_tsv("Data/EAR/earsurveyresults_2015ry.zip",col_types="ccdcccdddc")
+# ear16 <- read_tsv("Data/EAR/earsurveyresults_2016ry.zip",col_types="ccdcccdddc")
+# ear17 <- read_tsv("Data/EAR/earsurveyresults_2017ry.zip",col_types="ccdcccdddc")
+# ear18 <- read_tsv("Data/EAR/earsurveyresults_2018ry.zip",col_types="ccdcccdddc")
+# 
+# ear <- bind_rows(ear13,ear14,ear15,ear16,ear17,ear18)
+# rm(ear13,ear14,ear15,ear16,ear17,ear18)
+# save(ear,file="Data/EAR/ear.rds")
+load("Data/EAR/ear.rds")
 ear$QCat<-substr(ear$QuestionName,1,2)
 
 wr <- filter(ear,QCat=="WR")
@@ -202,11 +203,11 @@ stargazer(r1,r2,type='html')
 
 
 ## Shut-offs
-```{r shutoffs}
+```{r shutoffs, echo=FALSE, include=TRUE, message=FALSE,warning=FALSE, results='asis'}
 conn <- ear %>% filter(SectionName=="Connections" & Year==2018)
 conn_sfr <- conn %>% filter(QuestionName=="SFR Potable Total" & Year==2018)
 conn_mfr <- conn %>% filter(QuestionName=="MFR Potable Total" & Year==2018)
-conn_total <- conn %>% filter(QuestionName=="T Potable Total" & Year==2018) %>%rename(connections=QuestionResults) %>% mutate(connections=as.numeric(connections)) %>% select(PWSID,connections) %>% distinct(.keep_all=TRUE)
+conn_total <- conn %>% filter(QuestionName=="T Potable Total" & Year==2018) %>% rename(connections=QuestionResults) %>% mutate(connections=as.numeric(connections)) %>% select(PWSID,connections) %>% distinct(.keep_all=TRUE)
 
 shutoffs <- ear %>% filter(substr(QuestionName,1,12)=="WR SHUT_OFFS" & Year==2018)
 
@@ -223,23 +224,102 @@ shutoffs_total <- shutoffs %>%
   distinct(.keep_all=TRUE) %>% semi_join(pws_shutoff_collect,by="PWSID")
 
 shutoff_comments <- shutoffs %>% filter(QuestionName=="WR SHUT_OFFS Comments")
-  re
+  
 shutoff_pa<- ear%>%filter(QuestionName=="WR SHUT_OFFS Payment Assistance Total" & Year==2018) %>%distinct(PWSID, QuestionResults) %>% rename(shutoff_pa=QuestionResults) %>% filter(!is.na(shutoff_pa)) %>% mutate(shutoff_pa=as.numeric(shutoff_pa))
 
 conn_shutoff <- left_join(conn_total,shutoffs_total,by="PWSID") %>% mutate(shutoff_rate=shutoffs/connections) %>% filter(connections>0) %>% filter(shutoff_rate<=1)
 
 
-r_shutoff <- left_join(r,conn_shutoff,by="PWSID") %>% distinct(PWSID,connections,.keep_all=TRUE) %>%
-ggplot(filter(r_shutoff), aes(x=size_cat, y=shutoff_rate, colour=Ownership)) +
+r_shutoff <- left_join(r,conn_shutoff,by="PWSID") %>% distinct(PWSID,connections,.keep_all=TRUE) 
+ggplot(r_shutoff, aes(x=size_cat, y=shutoff_rate, colour=Ownership)) +
   geom_boxplot() 
 
 
-lm()
+r_shutoff_model <- lm(
+  shutoff_rate ~ Private + log(D_POPULATI),
+  data = filter(r_shutoff, D_POPULATI>3300)
+#  family = quasibinomial
+)
 
+summary(r_shutoff_model)
 ```
 
 ## Subsidy/ Cost assistance programs
+```{r subsidies}
+subs <- ear %>% filter(substr(QuestionName,1,5)=="WR LL" & Year==2018)
+subsidies <- ear %>% 
+  filter(QuestionName=="WR LL Subsidies" & Year==2018) %>% 
+  #filter(QuestionResults!="-") %>% 
+  select(PWSID,QuestionResults) %>% 
+  rename(subsidy=QuestionResults) %>% distinct(.keep_all=TRUE) 
 
+subsidies_LI <- subs %>% 
+  filter(QuestionName=="WR LL Eligibility-Low Income" & Year==2018) %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(LowIncome=QuestionResults) %>% distinct(.keep_all=TRUE) %>% mutate(LowIncome="Yes")
+
+subsidies_D <- subs %>% 
+  filter(QuestionName=="WR LL Eligibility-Disabled" & Year==2018) %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(Disabled=QuestionResults) %>% distinct(.keep_all=TRUE)  %>% mutate(Disabled="Yes")
+
+subsidies_S <- subs %>% 
+  filter(QuestionName=="WR LL Eligibility-Seniors" & Year==2018) %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(Seniors=QuestionResults) %>% distinct(.keep_all=TRUE) %>% mutate(Seniors="Yes")
+
+subsidies_M <- subs %>% 
+  filter(QuestionName=="WR LL Eligibility-Medical" & Year==2018) %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(Medical=QuestionResults) %>% distinct(.keep_all=TRUE) %>% mutate(Medical="Yes")
+
+subsidies_O <- subs %>% 
+  filter(QuestionName=="WR LL Eligibility-Other" & Year==2018) %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(Other=QuestionResults) %>% distinct(.keep_all=TRUE) %>% mutate(Other="Yes")
+
+subsidies_HowFunded <- subs %>% 
+  filter(QuestionName=="WR LL Funded") %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(Disabled=QuestionResults) %>% distinct(.keep_all=TRUE) 
+
+subsidies_BenefitForm <- subs %>% 
+  filter(QuestionName=="WR LL Benefit Form") %>% 
+  filter(QuestionResults!="-") %>%
+  select(PWSID,QuestionResults) %>%
+  rename(Disabled=QuestionResults) %>% distinct(.keep_all=TRUE) 
+ 
+
+shutoff_pa<-left_join(b,shutoff_pa,by="PWSID")
+
+subs_b <- b %>% 
+  left_join(subsidies,by="PWSID") %>%
+  left_join(subsidies_LI,by="PWSID") %>%
+  left_join(subsidies_S,by="PWSID") %>%
+  left_join(subsidies_D,by="PWSID") %>%
+  left_join(subsidies_M,by="PWSID") %>%
+  left_join(subsidies_O,by="PWSID") 
+
+subs_b$subsidy[which(subs_b$LowIncome=="Yes" | subs_b$Disabled=="Yes" | subs_b$Other=="Yes" | subs_b$Medical=="Yes" | subs_b$Seniors=="Yes")]<-"Yes"
+subs_b$LowIncome[which(subs_b$subsidy=="No")]<-"No"
+subs_b$Disabled[which(subs_b$subsidy=="No")]<-"No"
+subs_b$Medical[which(subs_b$subsidy=="No")]<-"No"
+subs_b$Seniors[which(subs_b$subsidy=="No")]<-"No"
+subs_b$Other[which(subs_b$subsidy=="No")]<-"No"
+
+subs_b$LowIncome[which(subs_b$subsidy=="Yes" & is.na(subs_b$LowIncome))]<-"No"
+subs_b$Disabled[which(subs_b$subsidy=="Yes" & is.na(subs_b$Disabled))]<-"No"
+subs_b$Medical[which(subs_b$subsidy=="Yes" & is.na(subs_b$Medical))]<-"No"
+subs_b$Seniors[which(subs_b$subsidy=="Yes" & is.na(subs_b$Seniors))]<-"No"
+subs_b$Other[which(subs_b$subsidy=="Yes" & is.na(subs_b$Other))]<-"No"
+
+```
 
 ## Census comparison
 
@@ -310,7 +390,10 @@ k2<-bv%>%group_by(Size_gr_3300,Ownership)%>%summarise(utilities=sum(count),serio
 kable(k1,digits=1)
 kable(k2,digits=1)
 
-
+sd<-lm(serious_violator_last_decade ~ Ownership + log(D_POPULATI),
+  data=filter(bv,D_POPULATI>3300)
+)
+summary(sd)
 
 ```
 
