@@ -223,7 +223,237 @@ own <- ear %>%
     
     
 
+save(own,"Data/own.rds")
 
+
+# census data
+census_api_key("b25f8b1b7bf10561c9cbc3a20a4d2572677f1f05")
+options(tigris_use_cache = TRUE)
+
+vars <- load_variables(2018, "acs5", cache = TRUE)
+
+census_vars <- c(median_income="B19013_001",
+                 pop_in_hh_with_income_assistance="B09010_002",
+                 pop_in_hh_with_no_income_assistance="B09010_008",
+                 hh_inc_5k="B19001_002",
+                 hh_inc_12.5k="B19001_003",
+                 hh_inc_17.5k="B19001_004",
+                 hh_inc_22.5k="B19001_005",
+                 hh_inc_27.5k="B19001_006",
+                 hh_inc_32.5k="B19001_007",
+                 hh_inc_37.5k="B19001_008",
+                 hh_inc_42.5k="B19001_009",
+                 hh_inc_47.5k="B19001_010",
+                 hh_inc_55k="B19001_011",
+                 hh_inc_67.5k="B19001_012",
+                 hh_inc_87.5k="B19001_013",
+                 hh_inc_112.5k="B19001_014",
+                 hh_inc_137.5k="B19001_015",
+                 hh_inc_175k="B19001_016",
+                 hh_inc_gr200k="B19001_017",
+                 hh_income_count = "B19001_001",
+                 hh_med_income_count = "B19019_001",
+                 hh_size_1_med_income = "B19019_002",
+                 hh_size_2_med_income = "B19019_003",
+                 hh_size_3_med_income = "B19019_004",
+                 hh_size_4_med_income = "B19019_005",
+                 hh_size_5_med_income = "B19019_006",
+                 hh_size_6_med_income = "B19019_007",
+                 hh_size_7plus_med_income = "B19019_008",
+                 avg_hh_size = "B25010_001",
+                 hh_inc_5k_rentcalc = 'B25122_002',
+                 hh_inc_15k_rentcalc = 'B25122_019',
+                 hh_inc_27.5k_rentcalc = 'B25122_036',
+                 hh_inc_42.5k_rentcalc = 'B25122_053',
+                 hh_inc_67.5k_rentcalc = 'B25122_070',
+                 hh_inc_87.5k_rentcalc = 'B25122_087',
+                 hh_inc_150k_rentcalc = 'B25122_104',
+                 hh_inc_5k_with_rent = 'B25122_004',
+                 hh_inc_5k_gross_rent_50 = 'B25122_004',
+                 hh_inc_5k_gross_rent_150 = 'B25122_005',
+                 hh_inc_5k_gross_rent_250 = 'B25122_006',
+                 hh_inc_5k_gross_rent_350 = 'B25122_007',
+                 hh_inc_5k_gross_rent_450 = 'B25122_008',
+                 hh_inc_5k_gross_rent_550 = 'B25122_009',
+                 hh_inc_5k_gross_rent_650 = 'B25122_010',
+                 hh_inc_5k_gross_rent_750 = 'B25122_011',
+                 hh_inc_5k_gross_rent_850 = 'B25122_012',
+                 hh_inc_5k_gross_rent_950 = 'B25122_013',
+                 hh_inc_5k_gross_rent_1100 = 'B25122_014',
+                 hh_inc_5k_gross_rent_1325 = 'B25122_015',
+                 hh_inc_5k_gross_rent_1750 = 'B25122_016',
+                 hh_inc_5k_gross_rent_2500 = 'B25122_017',
+                 hh_inc_15k_with_rent = 'B25122_020',
+                 hh_inc_15k_gross_rent_50 = 'B25122_021',
+                 hh_inc_15k_gross_rent_150 = 'B25122_022',
+                 hh_inc_15k_gross_rent_250 = 'B25122_023',
+                 hh_inc_15k_gross_rent_350 = 'B25122_024',
+                 hh_inc_15k_gross_rent_450 = 'B25122_025',
+                 hh_inc_15k_gross_rent_550 = 'B25122_026',
+                 hh_inc_15k_gross_rent_650 = 'B25122_027',
+                 hh_inc_15k_gross_rent_750 = 'B25122_028',
+                 hh_inc_15k_gross_rent_850 = 'B25122_029',
+                 hh_inc_15k_gross_rent_950 = 'B25122_030',
+                 hh_inc_15k_gross_rent_1100 = 'B25122_031',
+                 hh_inc_15k_gross_rent_1325 = 'B25122_032',
+                 hh_inc_15k_gross_rent_1750 = 'B25122_033',
+                 hh_inc_15k_gross_rent_2500 = 'B25122_034',         
+                 hh_inc_27.5k_with_rent = 'B25122_037',
+                 hh_inc_27.5k_gross_rent_50 = 'B25122_038',
+                 hh_inc_27.5k_gross_rent_150 = 'B25122_039',
+                 hh_inc_27.5k_gross_rent_250 = 'B25122_040',
+                 hh_inc_27.5k_gross_rent_350 = 'B25122_041',
+                 hh_inc_27.5k_gross_rent_450 = 'B25122_042',
+                 hh_inc_27.5k_gross_rent_550 = 'B25122_043',
+                 hh_inc_27.5k_gross_rent_650 = 'B25122_044',
+                 hh_inc_27.5k_gross_rent_750 = 'B25122_045',
+                 hh_inc_27.5k_gross_rent_850 = 'B25122_046',
+                 hh_inc_27.5k_gross_rent_950 = 'B25122_047',
+                 hh_inc_27.5k_gross_rent_1100 = 'B25122_048',
+                 hh_inc_27.5k_gross_rent_1325 = 'B25122_049',
+                 hh_inc_27.5k_gross_rent_1750 = 'B25122_050',
+                 hh_inc_27.5k_gross_rent_2500 = 'B25122_051',                  
+                 hh_inc_42.5k_with_rent = 'B25122_054',
+                 hh_inc_42.5k_gross_rent_50 = 'B25122_055',
+                 hh_inc_42.5k_gross_rent_150 = 'B25122_056',
+                 hh_inc_42.5k_gross_rent_250 = 'B25122_057',
+                 hh_inc_42.5k_gross_rent_350 = 'B25122_058',
+                 hh_inc_42.5k_gross_rent_450 = 'B25122_059',
+                 hh_inc_42.5k_gross_rent_550 = 'B25122_060',
+                 hh_inc_42.5k_gross_rent_650 = 'B25122_061',
+                 hh_inc_42.5k_gross_rent_750 = 'B25122_062',
+                 hh_inc_42.5k_gross_rent_850 = 'B25122_063',
+                 hh_inc_42.5k_gross_rent_950 = 'B25122_064',
+                 hh_inc_42.5k_gross_rent_1100 = 'B25122_065',
+                 hh_inc_42.5k_gross_rent_1325 = 'B25122_066',
+                 hh_inc_42.5k_gross_rent_1750 = 'B25122_067',
+                 hh_inc_42.5k_gross_rent_2500 = 'B25122_068',
+                 hh_inc_62.5k_with_rent = 'B25122_071',
+                 hh_inc_62.5k_gross_rent_50 = 'B25122_072',
+                 hh_inc_62.5k_gross_rent_150 = 'B25122_073',
+                 hh_inc_62.5k_gross_rent_250 = 'B25122_074',
+                 hh_inc_62.5k_gross_rent_350 = 'B25122_075',
+                 hh_inc_62.5k_gross_rent_450 = 'B25122_076',
+                 hh_inc_62.5k_gross_rent_550 = 'B25122_077',
+                 hh_inc_62.5k_gross_rent_650 = 'B25122_078',
+                 hh_inc_62.5k_gross_rent_750 = 'B25122_079',
+                 hh_inc_62.5k_gross_rent_850 = 'B25122_080',
+                 hh_inc_62.5k_gross_rent_950 = 'B25122_081',
+                 hh_inc_62.5k_gross_rent_1100 = 'B25122_082',
+                 hh_inc_62.5k_gross_rent_1325 = 'B25122_083',
+                 hh_inc_62.5k_gross_rent_1750 = 'B25122_084',
+                 hh_inc_62.5k_gross_rent_2500 = 'B25122_085', 
+                 hh_inc_82.5k_with_rent = 'B25122_088',
+                 hh_inc_82.5k_gross_rent_50 = 'B25122_089',
+                 hh_inc_82.5k_gross_rent_150 = 'B25122_090',
+                 hh_inc_82.5k_gross_rent_250 = 'B25122_091',
+                 hh_inc_82.5k_gross_rent_350 = 'B25122_092',
+                 hh_inc_82.5k_gross_rent_450 = 'B25122_093',
+                 hh_inc_82.5k_gross_rent_550 = 'B25122_094',
+                 hh_inc_82.5k_gross_rent_650 = 'B25122_095',
+                 hh_inc_82.5k_gross_rent_750 = 'B25122_096',
+                 hh_inc_82.5k_gross_rent_850 = 'B25122_097',
+                 hh_inc_82.5k_gross_rent_950 = 'B25122_098',
+                 hh_inc_82.5k_gross_rent_1100 = 'B25122_099',
+                 hh_inc_82.5k_gross_rent_1325 = 'B25122_100',
+                 hh_inc_82.5k_gross_rent_1750 = 'B25122_101',
+                 hh_inc_82.5k_gross_rent_2500 = 'B25122_102', 
+                 hh_inc_150k_with_rent = 'B25122_105',
+                 hh_inc_150k_gross_rent_50 = 'B25122_106',
+                 hh_inc_150k_gross_rent_150 = 'B25122_107',
+                 hh_inc_150k_gross_rent_250 = 'B25122_108',
+                 hh_inc_150k_gross_rent_350 = 'B25122_109',
+                 hh_inc_150k_gross_rent_450 = 'B25122_110',
+                 hh_inc_150k_gross_rent_550 = 'B25122_111',
+                 hh_inc_150k_gross_rent_650 = 'B25122_112',
+                 hh_inc_150k_gross_rent_750 = 'B25122_113',
+                 hh_inc_150k_gross_rent_850 = 'B25122_114',
+                 hh_inc_150k_gross_rent_950 = 'B25122_115',
+                 hh_inc_150k_gross_rent_1100 = 'B25122_116',
+                 hh_inc_150k_gross_rent_1325 = 'B25122_117',
+                 hh_inc_150k_gross_rent_1750 = 'B25122_118',
+                 hh_inc_150k_gross_rent_2500 = 'B25122_119' 
+                 )
+
+
+tracts <- get_acs(state = "CA", geography = "tract",
+                  variables = census_vars, geometry = TRUE)
+save(tracts,file="Data/census_tracts.rds")
+
+# census_vars2 <- c(median_income="B19013_001",
+#                  pop_in_hh_with_income_assistance="B09010_002",
+#                  pop_in_hh_with_no_income_assistance="B09010_008",
+#                  hh_inc_5k="B19001_002",
+#                  hh_inc_12.5k="B19001_003",
+#                  hh_inc_17.5k="B19001_004",
+#                  hh_inc_22.5k="B19001_005",
+#                  hh_inc_27.5k="B19001_006",
+#                  hh_inc_32.5k="B19001_007",
+#                  hh_inc_37.5k="B19001_008",
+#                  hh_inc_42.5k="B19001_009",
+#                  hh_inc_47.5k="B19001_010",
+#                  hh_inc_55k="B19001_011",
+#                  hh_inc_67.5k="B19001_012",
+#                  hh_inc_87.5k="B19001_013",
+#                  hh_inc_112.5k="B19001_014",
+#                  hh_inc_137.5k="B19001_015",
+#                  hh_inc_175k="B19001_016",
+#                  hh_inc_gr200k="B19001_017",
+#                  hh_income_count = "B19001_001")
+
+bg <- get_acs(state = "CA", geography = "block group",
+                  variables = census_vars, geometry = TRUE)
+
+save(bg,file="Data/census_blockgroups.rds")
+
+
+
+
+b.x <- st_buffer(st_transform(bounds,3310),dist=0)
+t.x <- tracts %>%
+  select(GEOID,geometry) %>%
+  st_transform(3310) %>%
+  st_buffer(dist=0) %>%
+  mutate(AreaTract = st_area(.))
+  
+  
+  st_buffer(st_transform(tracts,3310),dist=0)
+bg.x <- st_buffer(st_transform(bg,3310),dist=0)
+t.x$AreaTract_Total <- st_area(t.x)
+bg.x$AreaBlockGroup_Total <- st_area(bg.x)
+
+tracts.bounds <- st_intersection(b.x,t.x) 
+tracts.bounds$Area_TractPWS <- st_area(tracts.bounds)
+tracts.bounds$Percent_TractinPWS <- tracts.bounds$Area_TractPWS/tracts.bounds$AreaTract_Total
+
+bg.bounds <- st_intersection(bg.x,t.x) 
+bg.bounds$Area_BlockGroupPWS <- st_area(bg.bounds)
+bg.bounds$Percent_BlockGroupinPWS <- bg.bounds$Area_BlockGroupPWS/bg.bounds$AreaBlockGroup_Total
+
+### Find 20% and 50% Income quintile ranges by CWS (use block groups)
+
+
+### Find "disposable income" at 20% range
+
+##### 1. 
+##Take rent distribution within the range corresponding to the bracket that the 20% income quintile is.
+
+## Take median gross rent.
+## Calc "disoposable income" = 20% income/12 - median gross rent + water at 6hcf bill
+## Calc AR20_hh3 = 6hcf bill/disposable income
+## Cacl AR20_hh6 = 12hcf bill/ disposable incoem
+
+
+
+tracts.b<-tracts[bounds,]
+
+tracts.b %>%
+  ggplot(aes(fill = estimate)) +
+  geom_sf(color = NA) +
+  coord_sf(crs = 26911) +
+  scale_fill_viridis_c(option = "magma")
+
+## Assign tracts to pws
 
 ```
 
