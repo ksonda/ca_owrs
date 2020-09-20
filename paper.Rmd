@@ -35,8 +35,64 @@ library(stargazer)
 #### Customer assistance programs
 
 ## Profile of prevalence of private water utilities in CA (c. 2017))
+```{r ear}
+inv <- read_excel("Data/EAR/inventory.xlsx",
+                  sheet = "SDWISWaterSystemInventory071620") %>% filter(WaterSystemType=="C")
 
-There are ~ 2,800 Community Water Systems (defined as water systems serving at least 15 residential units on a year-round basis, generally applying to all municipal and institutional systems with residential components, but not commercial, school, and recreational facilities). Of these, 97.6% of the population is  served by the 653 systems that serve more than 3,300 people, while only 2.4% of the population is served by 2,173 small systems.
+inv$size_cat[which(inv$Pop<=500)] = "1. Very Small (<500)" 
+inv$size_cat[which(inv$Pop>500)] = "2. Small (501-3300)" 
+inv$size_cat[which(inv$Pop>3301)] = "3. Medium (3301-10,000)" 
+inv$size_cat[which(inv$Pop>10001)] = "4. Large (10,001- 100,000)" 
+inv$size_cat[which(inv$Pop>100000)] = "5. Very Large (>100,000)" 
+
+size_summary <- inv %>% 
+  group_by(size_cat) %>%
+  add_tally() %>%
+  summarise(count=mean(n),pop=sum(Pop)/10^6) %>%
+  ungroup() %>%
+  mutate(perc_pop=100*pop/sum(pop))
+kable(size_summary, digits=1)
+
+# ear13 <- read_tsv("Data/EAR/earsurveyresults_2013ry.zip",col_types="ccdcccdddc")
+# ear14 <- read_tsv("Data/EAR/earsurveyresults_2014ry.zip",col_types="ccdcccdddc")
+# ear15 <- read_tsv("Data/EAR/earsurveyresults_2015ry.zip",col_types="ccdcccdddc")
+# ear16 <- read_tsv("Data/EAR/earsurveyresults_2016ry.zip",col_types="ccdcccdddc")
+# ear17 <- read_tsv("Data/EAR/earsurveyresults_2017ry.zip",col_types="ccdcccdddc")
+# ear18 <- read_tsv("Data/EAR/earsurveyresults_2018ry.zip",col_types="ccdcccdddc")
+# 
+# ear <- bind_rows(ear13,ear14,ear15,ear16,ear17,ear18)
+# rm(ear13,ear14,ear15,ear16,ear17,ear18)
+# save(ear,file="Data/EAR/ear.rds")
+load("Data/EAR/ear.rds")
+
+own <- ear %>% 
+    filter(QuestionName == "Population" | 
+                QuestionName == "Water System Classification" |
+                QuestionName == "Water System Ownership" |
+                QuestionName == "IsWholesaler") %>% 
+    mutate(QuestionID=paste0("q",QuestionID)) %>%
+    select(PWSID, Year, QuestionName,  QuestionResults) %>% 
+    distinct(PWSID, Year, QuestionName, .keep_all=TRUE) %>%
+    pivot_wider(names_from = QuestionName,
+                values_from = QuestionResults) %>%
+    group_by(PWSID) %>%
+    mutate(maxYear=max(Year)) %>%
+    ungroup() %>%
+    filter(Year == maxYear) %>%
+    filter(is.na(IsWholesaler)) %>%
+ #   mutate(Population = as.numeric(Population)) %>%
+    filter(`Water System Classification`=="Community Water System")
+    
+    
+
+
+own_inv <- left_join(inv,own,by="PWSID")
+ 
+
+```
+
+There are  2,917 Community Water Systems (defined as water systems serving at least 15 residential units on a year-round basis, generally applying to all municipal and institutional systems with residential components, but not commercial, school, and recreational facilities). Of these, 97.6% of the population is  served by the 658 systems that serve more than 3,300 people, while only 2.4% of the population is served by 2,259
+small systems.
 
 Overall, while 38% of community water systems are privately owned, they are disproportionately small systems, and so they only serve about 18% of the population. 94% of the population served by private utilities are served by utlities with more than 3,300 people. 
 ```{r boundaries, echo=FALSE,results='asis',message=FALSE, warning=FALSE}
@@ -74,7 +130,7 @@ kable(size_summary.p, caption= "Size and population distribution and ownership o
 
 A common concern with private water utilities is that they would abuse their local monopolies and exploit market power to maximize profits and raise prices. It is difficult to ascertain the actual short and long-run costs of water utilities in the United States. It is also difficult to directly compare water prices across utilities, because there are complex rate structures such as increasing and decreasing block rates, seasonally varying rates, and water budget - based rates that vary with consumption levels. Moreover, in many places, the bulk of residential water use is spent on outdoor water uses such as lawn irrigation that are less salient to those concerned about affordability. Here, I use a survey of the rate structures of 387 (of which 79 are privately owned) of the largest CA utilities (comprising 30.5 million people, or 79% of the population served by water utilities in CA) in effect as of 2017 to calculate the average monthly water bill for households sized 1-7, assuming a reasonable water use for domestic purposes at 50 gallons per capita per day, in line with otehr scholars (M Teodoro 20xx, J Mumm 20XX, WHO 2011). 
 
-A  caveat here is that this subset of utilties for the most part represents phenomenon in larger California utilities. Cost structures and dynamics affecting water pricing and privatization in rural areas may differ substantially from those in urban areas. Below, we see that the vast majority of utilities with rates available for analysis have service populations greater than 1,000. 
+A  caveat here is that this subset of utilities for the most part represents phenomenon in larger California utilities. Cost structures and dynamics affecting water pricing and privatization in rural areas may differ substantially from those in urban areas. Below, we see that the vast majority of utilities with rates available for analysis have service populations greater than 1,000. 
 
 ```{r rates pop,echo=FALSE, include=TRUE, message=FALSE,warning=FALSE, results='asis'}
 rates <- read_csv("Data/affordability.csv")
