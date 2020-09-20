@@ -65,20 +65,158 @@ kable(size_summary, digits=1)
 # save(ear,file="Data/EAR/ear.rds")
 load("Data/EAR/ear.rds")
 
+questions <- c("Population",
+               "Water System Classification",
+               "Water System Ownership",
+               "IsWholesaler",
+               "WR Type",
+               "WR 6 HCF DW Charges",
+               "WR 12 HCF DW Charges",
+               "T Potable Total",
+               "WR SHUT_OFFS Once No Collect",
+               "WR SHUT_OFFS Once SF Total",
+               "WR SHUT_OFFS More Than Once MF Total",
+               "WR SHUT_OFFS More Than Once SF Total",
+               "WR SHUT_OFFS Once MF Total",
+               "WR LL Subsidies",
+               "WR LL Eligibility-Low Income",
+               "WR LL Eligibility-Disabled",
+               "WR LL Eligibility-Medical",
+               "WR LL Eligibility-Other",
+               "WR LL Eligibility-Senior",
+               "WR LL Benefit Form",
+               "WR LL Funded",
+               "DIST Probs SC BL Num",
+                "DIST Probs SC BL Investigated",
+                "DIST Probs SC BL Reported to District",
+                "DIST Probs SC BL Cause",
+                "DIST Probs Main BL Num",
+                "DIST Probs Main BL Investigated",
+                "DIST Probs Main BL Reported to District",
+                "DIST Probs Main BL Cause",
+                "DIST Probs WO Num",
+                "DIST Probs WO Investigated",
+                "DIST Probs WO Reported to District",
+                "DIST Probs WO Cause",
+                "DIST Probs BWO Num",
+                "DIST Probs BWO Investigated",
+                "DIST Probs BWO Reported to District",
+                "DIST Probs BWO Cause",
+                "DIST Probs Total Num",
+                "DIST Probs Total Investigated",
+                "DIST Probs Total Reported to District",
+                "DIST Probs Comments",
+                "TREATMENT GW Problems",
+                "TREATMENT SW Problems",
+                "SLI Lead Number",
+                "SLI Lead Total Length",
+                "SLI Fittings NOT lead pipe",
+                "SLI Fittings Lead pipe",
+                "SLI Total Lead Service Lines",
+                "SLI Cast Number",
+                "SLI Copper Number",
+                "SLI Ductile Number",
+                "SLI Fittings Unknown",
+                "SLI Galvanized Number",
+                "SLI HDPE Number",
+                "SLI Identify material 1",
+                "SLI Identify material 2",
+                "SLI Identify material 3",
+                "SLI Identify material 4",
+                "SLI Material 1 Number",
+                "SLI Material 2 Number",
+                "SLI Material 3 Number",
+                "SLI Material 4 Number",
+                "SLI Polybutylene Number",
+                "SLI Polyethylene Number",
+                "SLI Polyvinyl Number",
+                "SLI TA cement Number",
+                "SLI Total Lead Service Lines",
+                "SLI Total Service Connections",
+                "SLI Total Service Lines",
+                "SLI Unknown Number",
+                "SLI Unknown Total Length",
+                "DIST Infra Rehabilitation Comments",
+                "DIST Infra Rehabilitation Expenditure",
+                "DIST Infra Rehabilitation Not Tracked",
+                "DIST Infra Rehabilitation Num Leaks",
+                "DIST Infra Rehabilitation Portion",
+                "DIST Infra Rehabilitation Real Loss",
+                "DIST Infra renewal table unit",
+                "DIST Infra Repair Comments",
+                "DIST Infra Repair Expenditure",
+                "DIST Infra Repair Not Tracked",
+                "DIST Infra Repair Num Leaks",
+                "DIST Infra Repair Portion",
+                "DIST Infra Repair Real Loss",
+                "DIST Infra Replacement Comments",
+                "DIST Infra Replacement Expenditure",
+                "DIST Infra Replacement Not Tracked",
+                "DIST Infra Replacement Num Leaks",
+                "DIST Infra Replacement Portion",
+                "DIST Infra Replacement Real Loss",
+                "DIST Infra Total Comments",
+                "DIST Infra Total Expenditure",
+                "DIST Infra Total Not Tracked",
+                "DIST Infra Total Num Leaks",
+                "DIST Infra Total Portion",
+                "DIST Infra Total Real Loss",
+                "Cur Total Connections",
+                "Inactive Connections",
+                "Connections meter records kept",
+                "Connections SF with outdoor irrigation meters",
+                "Connections MF with outdoor irrigation meters",
+                "Connections customers with indoor submeters",
+                "Connections Comment",
+                "DIST Interv Booster Average",
+                "DIST Interv Booster Comments",
+                "DIST Interv Booster Expenditure",
+                "DIST Interv Booster Not Tracked",
+                "DIST Interv Booster Portion",
+                "DIST Interv Other Average",
+                "DIST Interv Other Comments",
+                "DIST Interv Other Expenditure",
+                "DIST Interv Other Not Tracked",
+                "DIST Interv Other Portion",
+                "DIST Interv Pressure R Average",
+                "DIST Interv Pressure R Comments",
+                "DIST Interv Pressure R Expenditure",
+                "DIST Interv Pressure R Not Tracked",
+                "DIST Interv Pressure R Portion",
+                "DIST Interv Pressure T Average",
+                "DIST Interv Pressure T Comments",
+                "DIST Interv Pressure T Expenditure",
+                "DIST Interv Pressure T Not Tracked",
+                "DIST Interv Pressure T Portion",
+                "DIST Interv Reduced Average",
+                "DIST Interv Reduced Comments",
+                "DIST Interv Reduced Expenditure",
+                "DIST Interv Reduced Not Tracked",
+                "DIST Interv Reduced Portion",
+                "DIST Interv Total Average",
+                "DIST Interv Total Comments",
+                "DIST Interv Total Expenditure",
+                "DIST Interv Total Not Tracked",
+                "DIST Interv Total Portion",
+                "DIST 5 Year Expenditure",
+                "DIST 5 Year Summary Comments",
+                "DIST 5 Year Total Leaks",
+                "DIST 5 Year Water Loss" 
+               )
+
+
+
 own <- ear %>% 
-    filter(QuestionName == "Population" | 
-                QuestionName == "Water System Classification" |
-                QuestionName == "Water System Ownership" |
-                QuestionName == "IsWholesaler") %>% 
-    mutate(QuestionID=paste0("q",QuestionID)) %>%
-    select(PWSID, Year, QuestionName,  QuestionResults) %>% 
+    filter(QuestionName %in% questions) %>% 
+    group_by(PWSID,Year,QuestionName) %>%
+     mutate(maxYear=max(Year)) %>%
+    ungroup() %>%
+  #  filter(Year == maxYear) %>%
+   select(PWSID, Year, QuestionName,  QuestionResults) %>% 
     distinct(PWSID, Year, QuestionName, .keep_all=TRUE) %>%
     pivot_wider(names_from = QuestionName,
                 values_from = QuestionResults) %>%
-    group_by(PWSID) %>%
-    mutate(maxYear=max(Year)) %>%
-    ungroup() %>%
-    filter(Year == maxYear) %>%
+  
     filter(is.na(IsWholesaler)) %>%
  #   mutate(Population = as.numeric(Population)) %>%
     filter(`Water System Classification`=="Community Water System")
@@ -86,8 +224,6 @@ own <- ear %>%
     
 
 
-own_inv <- left_join(inv,own,by="PWSID")
- 
 
 ```
 
