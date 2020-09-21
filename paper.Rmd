@@ -14,6 +14,7 @@ library(sf)
 library(beeswarm)
 library(knitr)
 library(stargazer)
+library(readxl)
 ```
 
 ## Data Sources
@@ -406,7 +407,9 @@ bg <- get_acs(state = "CA", geography = "block group",
 
 save(bg,file="Data/census_blockgroups.rds")
 
-
+bounds <- st_read("Data/boundaries.geojson") %>% 
+  filter(D_PWS_FED_=="C") %>% 
+  select(PWSID,D_POPULATI,SVC_CONNEC)
 
 
 b.x <- st_buffer(st_transform(bounds,3310),dist=0)
@@ -416,17 +419,27 @@ t.x <- tracts %>% filter(variable=="median_income") %>%
   st_buffer(dist=0) %>%
   mutate(AreaTract = st_area(.))
 
+bg.x <- bg %>% filter(variable=="median_income") %>%
+  select(GEOID,NAME,geometry) %>%
+  st_transform(3310) %>%
+  st_buffer(dist=0) %>%
+  mutate(AreaBlockGroup = st_area(.))
+
 
 tracts.bounds <- st_intersection(b.x,t.x) 
 tracts.bounds$Area_TractPWS <- st_area(tracts.bounds)
 tracts.bounds$Percent_TractinPWS <- tracts.bounds$Area_TractPWS/tracts.bounds$AreaTract
+save(tracts.bounds,file="Data/tracts_bounds.rds")
 
-bg.bounds <- st_intersection(bg.x,t.x) 
+bg.bounds <- st_intersection(b.x,bg.x) 
 bg.bounds$Area_BlockGroupPWS <- st_area(bg.bounds)
-bg.bounds$Percent_BlockGroupinPWS <- bg.bounds$Area_BlockGroupPWS/bg.bounds$AreaBlockGroup_Total
+bg.bounds$Percent_BlockGroupinPWS <- bg.bounds$Area_BlockGroupPWS/bg.bounds$AreaBlockGroup
+save(bg.bounds,file="Data/block_groups_bounds.rds")
 
 ### Find 20% and 50% Income quintile ranges by CWS (use block groups)
-tract.income <- tracts %>% filter(variable %in% c('hh_inc_5k',
+pws.income <- bg.bounds %>% st_drop_geometry() %>%
+  left_join(bg,by="GEOID") %>%
+  filter(variable %in% c('hh_inc_5k',
                  'hh_inc_12.5k',
                  'hh_inc_17.5k',
                  'hh_inc_22.5k',
@@ -442,13 +455,69 @@ tract.income <- tracts %>% filter(variable %in% c('hh_inc_5k',
                  'hh_inc_137.5k',
                  'hh_inc_175k',
                  'hh_inc_gr200k')) %>%
-  st_drop_geometry() %>% group_by(GEOID) %>%
+  group_by(PWSID,variable) %>%
+  summarise(estimate=sum(estimate*Percent_BlockGroupinPWS)) %>% 
+  ungroup() %>%
+  mutate(var2=case_when(variable=="hh_inc_5k" ~ 1,
+                 variable=="hh_inc_12.5k" ~ 2,
+                 variable=="hh_inc_17.5k" ~ 3,
+                 variable=="hh_inc_22.5k" ~ 4,
+                 variable=="hh_inc_27.5k" ~ 5,
+                 variable=="hh_inc_32.5k" ~ 6,
+                 variable=="hh_inc_37.5k" ~ 7,
+                 variable=="hh_inc_42.5k" ~ 8,
+                 variable=="hh_inc_47.5k" ~ 9,
+                 variable=="hh_inc_55k" ~ 10,
+                 variable=="hh_inc_67.5k" ~ 11,
+                 variable=="hh_inc_87.5k" ~ 12,
+                 variable=="hh_inc_112.5k" ~ 13,
+                 variable=="hh_inc_137.5k" ~ 14,
+                 variable=="hh_inc_175k" ~ 15,
+                 variable=="hh_inc_gr200k" ~ 16,)) %>% 
+  arrange(PWSID,var2) %>% 
+  group_by(PWSID) %>%
   mutate(cum_inc_sum = cumsum(estimate),
-         percentile_inc = 100*cum_inc_sum/sum(estimate))
+         percentile_inc = 100*cum_inc_sum/sum(estimate)) %>%
+  ungroup() %>%
+  mutate(perc_dist20=abs(as.numeric(percentile_inc)-20),
+         perc_dist50=abs(as.numeric(percentile_inc)-50)) %>%
+  group_by(PWSID) %>%
+  filter(perc_dist20==min(perc_dist20) | 
+         perc_dist50==min(perc_dist50)) %>%
+  mutate(percentile=case_when(var2==min(var2)~"20th Percentile",
+                              var2==max(var2)~"50th Percentile"),
+         income_perc=case_when(var2==1 ~ 5000,
+                               var2==2 ~ 12500,
+                               var2==3 ~ 17500,
+                               var2==4 ~ 22500,
+                               var2==5 ~ 27500,
+                               var2==6 ~ 32500,
+                               var2==7 ~ 37500,
+                               var2==8 ~ 42500,
+                               var2==9 ~ 47500,
+                               var2==10 ~ 55000,
+                               var2==11 ~ 67500,
+                               var2==12 ~ 87500,
+                               var2==13 ~ 112500,
+                               var2==14 ~ 137500,
+                               var2==15 ~ 175000,
+                               var2==16 ~ 225000)
+         ) %>%
+  pivot_wider(id_cols=PWSID,names_from=percentile,values_from=income_perc)
   
+pws.income2 <-unnest(pws.income, cols = c(`20th Percentile`, `50th Percentile`, `NA`)) %>%
+  select(PWSID,`20th Percentile`,`50th Percentile`) %>% distinct(.keep_all=TRUE)
 
+save(pws.income2,file="Data/pws_income2.rds")
+
+load("Data/own.rds")
 
 ### Find "disposable income" at 20% range
+
+pws.rent <-  bg.bounds %>% 
+  st_drop_geometry() %>%
+  left_join(tracts,by="GEOID") %>%
+  filter(variable=)
 
 ##### 1. 
 ##Take rent distribution within the range corresponding to the bracket that the 20% income quintile is.
@@ -457,6 +526,7 @@ tract.income <- tracts %>% filter(variable %in% c('hh_inc_5k',
 ## Calc "disoposable income" = 20% income/12 - median gross rent + water at 6hcf bill
 ## Calc AR20_hh3 = 6hcf bill/disposable income
 ## Cacl AR20_hh6 = 12hcf bill/ disposable incoem
+
 
 
 
@@ -476,36 +546,36 @@ There are  2,917 Community Water Systems (defined as water systems serving at le
 small systems.
 
 Overall, while 38% of community water systems are privately owned, they are disproportionately small systems, and so they only serve about 18% of the population. 94% of the population served by private utilities are served by utlities with more than 3,300 people. 
-```{r boundaries, echo=FALSE,results='asis',message=FALSE, warning=FALSE}
-b <- st_read("Data/boundaries.geojson") %>% filter(D_PWS_FED_=="C") 
-b$size_cat= NA
-
-b$size_cat[which(b$D_POPULATI<=500)] = "1. Very Small (<500)" 
-b$size_cat[which(b$D_POPULATI>500)] = "2. Small (501-3300)" 
-b$size_cat[which(b$D_POPULATI>3301)] = "3. Medium (3301-10,000)" 
-b$size_cat[which(b$D_POPULATI>10001)] = "4. Large (10,001- 100,000)" 
-b$size_cat[which(b$D_POPULATI>100000)] = "5. Very Large (>100,000)" 
-
-b$Ownership <-"Public"
-b$Ownership[which(b$OWNER_TYPE=="P")]<-"Private"
-
-size_summary <- b %>% group_by(size_cat)%>%add_tally()%>%summarise(count=mean(n),pop=sum(D_POPULATI)/10^6)%>%st_drop_geometry()
-
-size_summary$perc_pop <- 100*size_summary$pop/sum(size_summary$pop)
-size_summary <- arrange(size_summary,size_cat)
-kable(size_summary, caption= "Size and population distribution of CA Water Utilities",digits=1)
-
-private <- b%>%group_by(Ownership)%>%add_tally()%>%summarize(count=mean(n),pop=sum(D_POPULATI)/10^6)%>%st_drop_geometry() %>% ungroup()%>%mutate(perc_pop=100*pop/sum(pop))
-kable(private, caption= "Population served by public and private utilities in CA",digits=1)
-
-size_summary.p <- b %>% group_by(size_cat,Ownership)%>%add_tally()%>%summarise(count=mean(n),pop=sum(D_POPULATI)/10^6)%>%st_drop_geometry()
-
-size_summary.p$perc_pop <- 100*size_summary.p$pop/sum(size_summary.p$pop)
-size_summary.p <- arrange(size_summary.p,size_cat,Ownership)
-kable(size_summary.p, caption= "Size and population distribution and ownership of CA Water Utilities",digits=1)
-
-
-```
+<!-- # ```{r boundaries, echo=FALSE,results='asis',message=FALSE, warning=FALSE} -->
+<!-- # b <- st_read("Data/boundaries.geojson") %>% filter(D_PWS_FED_=="C")  -->
+<!-- # b$size_cat= NA -->
+<!-- #  -->
+<!-- # b$size_cat[which(b$D_POPULATI<=500)] = "1. Very Small (<500)"  -->
+<!-- # b$size_cat[which(b$D_POPULATI>500)] = "2. Small (501-3300)"  -->
+<!-- # b$size_cat[which(b$D_POPULATI>3301)] = "3. Medium (3301-10,000)"  -->
+<!-- # b$size_cat[which(b$D_POPULATI>10001)] = "4. Large (10,001- 100,000)"  -->
+<!-- # b$size_cat[which(b$D_POPULATI>100000)] = "5. Very Large (>100,000)"  -->
+<!-- #  -->
+<!-- # b$Ownership <-"Public" -->
+<!-- # b$Ownership[which(b$OWNER_TYPE=="P")]<-"Private" -->
+<!-- #  -->
+<!-- # size_summary <- b %>% group_by(size_cat)%>%add_tally()%>%summarise(count=mean(n),pop=sum(D_POPULATI)/10^6)%>%st_drop_geometry() -->
+<!-- #  -->
+<!-- # size_summary$perc_pop <- 100*size_summary$pop/sum(size_summary$pop) -->
+<!-- # size_summary <- arrange(size_summary,size_cat) -->
+<!-- # kable(size_summary, caption= "Size and population distribution of CA Water Utilities",digits=1) -->
+<!-- #  -->
+<!-- # private <- b%>%group_by(Ownership)%>%add_tally()%>%summarize(count=mean(n),pop=sum(D_POPULATI)/10^6)%>%st_drop_geometry() %>% ungroup()%>%mutate(perc_pop=100*pop/sum(pop)) -->
+<!-- # kable(private, caption= "Population served by public and private utilities in CA",digits=1) -->
+<!-- #  -->
+<!-- # size_summary.p <- b %>% group_by(size_cat,Ownership)%>%add_tally()%>%summarise(count=mean(n),pop=sum(D_POPULATI)/10^6)%>%st_drop_geometry() -->
+<!-- #  -->
+<!-- # size_summary.p$perc_pop <- 100*size_summary.p$pop/sum(size_summary.p$pop) -->
+<!-- # size_summary.p <- arrange(size_summary.p,size_cat,Ownership) -->
+<!-- # kable(size_summary.p, caption= "Size and population distribution and ownership of CA Water Utilities",digits=1) -->
+<!-- #  -->
+<!-- #  -->
+<!-- # ``` -->
 
 ## Then parse the water rates
 
@@ -515,6 +585,11 @@ A  caveat here is that this subset of utilities for the most part represents phe
 
 ```{r rates pop,echo=FALSE, include=TRUE, message=FALSE,warning=FALSE, results='asis'}
 rates <- read_csv("Data/affordability.csv")
+rates <- left_join(rates,pws.income2,by=c("pwsid"="PWSID"))
+rates$AR20 <- rates$total_bill_by_hhsize/rates$`20th Percentile`
+rates$MHI <- rates$total_bill_by_hhsize/rates$`50th Percentile`
+
+
 priv <- select(b,PWSID,Ownership,D_POPULATI)
 rates <- left_join(rates,b,by=c("pwsid"="PWSID")) 
 rates <- rates[which(!is.na(rates$Ownership)),]
@@ -585,6 +660,8 @@ mr2.w<-lm(MonthlyBill~Private,data=r[which(r$ConsLevel=="WR 12 HCF DW Charges"& 
 
 rates$Private <- 0
 rates$Private[which(rates$Ownership=="Private")]<-1
+ggplot(rates, aes(x=as.factor(hh_sizes), y=total_bill_by_hhsize, colour=Ownership)) +
+  geom_boxplot() 
 ggplot(rates, aes(x=as.factor(hh_sizes), y=total_bill_by_hhsize, colour=Ownership)) +
   geom_boxplot() 
 
@@ -763,7 +840,24 @@ subs_b$Other[which(subs_b$subsidy=="Yes" & is.na(subs_b$Other))]<-"No"
 Look and see if there's any socioeconomic correlations
 
 - Are richer places having higher prices?
+
+```{r richer higher}
+prices <- select(own,
+                 PWSID,
+                 Year,
+                 `Water System Classification`,
+                 `Water System Ownership`,
+                 `WR Type`,
+                 `WR 6 HCF DW Charges`,
+                 `WR 12 HCF DW Charges`) %>% filter(Year==2017 & `WR Type`!="-" & !is.na(`WR Type`))
+prices.income <- inv %>% left_join(prices,by="PWSID") %>% left_join(pws.income2,by="PWSID")
+```
+
 - Are private utiltiies tending to be in richer or poorer places than public utilities?
+
+```{r private richer}
+
+```
 
 If there are socioeconomic correlations, what are the implications for poorer people who are still in more expensive places? Need to review exisintg customer assistance programs/ water bill subsidy programs. 
 
