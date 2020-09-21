@@ -380,29 +380,29 @@ tracts <- get_acs(state = "CA", geography = "tract",
                   variables = census_vars, geometry = TRUE)
 save(tracts,file="Data/census_tracts.rds")
 
-# census_vars2 <- c(median_income="B19013_001",
-#                  pop_in_hh_with_income_assistance="B09010_002",
-#                  pop_in_hh_with_no_income_assistance="B09010_008",
-#                  hh_inc_5k="B19001_002",
-#                  hh_inc_12.5k="B19001_003",
-#                  hh_inc_17.5k="B19001_004",
-#                  hh_inc_22.5k="B19001_005",
-#                  hh_inc_27.5k="B19001_006",
-#                  hh_inc_32.5k="B19001_007",
-#                  hh_inc_37.5k="B19001_008",
-#                  hh_inc_42.5k="B19001_009",
-#                  hh_inc_47.5k="B19001_010",
-#                  hh_inc_55k="B19001_011",
-#                  hh_inc_67.5k="B19001_012",
-#                  hh_inc_87.5k="B19001_013",
-#                  hh_inc_112.5k="B19001_014",
-#                  hh_inc_137.5k="B19001_015",
-#                  hh_inc_175k="B19001_016",
-#                  hh_inc_gr200k="B19001_017",
-#                  hh_income_count = "B19001_001")
+census_vars2 <- c(median_income="B19013_001",
+                 pop_in_hh_with_income_assistance="B09010_002",
+                 pop_in_hh_with_no_income_assistance="B09010_008",
+                 hh_inc_5k="B19001_002",
+                 hh_inc_12.5k="B19001_003",
+                 hh_inc_17.5k="B19001_004",
+                 hh_inc_22.5k="B19001_005",
+                 hh_inc_27.5k="B19001_006",
+                 hh_inc_32.5k="B19001_007",
+                 hh_inc_37.5k="B19001_008",
+                 hh_inc_42.5k="B19001_009",
+                 hh_inc_47.5k="B19001_010",
+                 hh_inc_55k="B19001_011",
+                 hh_inc_67.5k="B19001_012",
+                 hh_inc_87.5k="B19001_013",
+                 hh_inc_112.5k="B19001_014",
+                 hh_inc_137.5k="B19001_015",
+                 hh_inc_175k="B19001_016",
+                 hh_inc_gr200k="B19001_017",
+                 hh_income_count = "B19001_001")
 
 bg <- get_acs(state = "CA", geography = "block group",
-                  variables = census_vars, geometry = TRUE)
+                  variables = census_vars2, geometry = TRUE)
 
 save(bg,file="Data/census_blockgroups.rds")
 
@@ -410,27 +410,42 @@ save(bg,file="Data/census_blockgroups.rds")
 
 
 b.x <- st_buffer(st_transform(bounds,3310),dist=0)
-t.x <- tracts %>%
-  select(GEOID,geometry) %>%
+t.x <- tracts %>% filter(variable=="median_income") %>%
+  select(GEOID,NAME,geometry) %>%
   st_transform(3310) %>%
   st_buffer(dist=0) %>%
   mutate(AreaTract = st_area(.))
-  
-  
-  st_buffer(st_transform(tracts,3310),dist=0)
-bg.x <- st_buffer(st_transform(bg,3310),dist=0)
-t.x$AreaTract_Total <- st_area(t.x)
-bg.x$AreaBlockGroup_Total <- st_area(bg.x)
+
 
 tracts.bounds <- st_intersection(b.x,t.x) 
 tracts.bounds$Area_TractPWS <- st_area(tracts.bounds)
-tracts.bounds$Percent_TractinPWS <- tracts.bounds$Area_TractPWS/tracts.bounds$AreaTract_Total
+tracts.bounds$Percent_TractinPWS <- tracts.bounds$Area_TractPWS/tracts.bounds$AreaTract
 
 bg.bounds <- st_intersection(bg.x,t.x) 
 bg.bounds$Area_BlockGroupPWS <- st_area(bg.bounds)
 bg.bounds$Percent_BlockGroupinPWS <- bg.bounds$Area_BlockGroupPWS/bg.bounds$AreaBlockGroup_Total
 
 ### Find 20% and 50% Income quintile ranges by CWS (use block groups)
+tract.income <- tracts %>% filter(variable %in% c('hh_inc_5k',
+                 'hh_inc_12.5k',
+                 'hh_inc_17.5k',
+                 'hh_inc_22.5k',
+                 'hh_inc_27.5k',
+                 'hh_inc_32.5k',
+                 'hh_inc_37.5k',
+                 'hh_inc_42.5k',
+                 'hh_inc_47.5k',
+                 'hh_inc_55k',
+                 'hh_inc_67.5k',
+                 'hh_inc_87.5k',
+                 'hh_inc_112.5k',
+                 'hh_inc_137.5k',
+                 'hh_inc_175k',
+                 'hh_inc_gr200k')) %>%
+  st_drop_geometry() %>% group_by(GEOID) %>%
+  mutate(cum_inc_sum = cumsum(estimate),
+         percentile_inc = 100*cum_inc_sum/sum(estimate))
+  
 
 
 ### Find "disposable income" at 20% range
